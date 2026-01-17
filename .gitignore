@@ -1,0 +1,49 @@
+# --- Security (CRITICAL) ---
+.env
+
+# --- Project Specific (Grid Bot Data) ---
+# Ignore runtime data but keep the folder
+data/*.json
+data/*.db
+data/*.lock
+data/backtest_*.json
+
+# --- Python Standard ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Logs ---
+logs/
+*.log
+
+# --- IDE Settings ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
