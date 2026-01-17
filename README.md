@@ -83,7 +83,6 @@ gridtrading/
 
 ## 🚨 Emergency Stop System
 
-**توضیحات فارسی:** سیستم توقف اضطراری از ضررهای سنگین جلوگیری می‌کند.
 
 ### How It Works
 
