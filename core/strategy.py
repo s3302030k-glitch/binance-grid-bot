@@ -60,6 +60,7 @@ class GridStrategy:
         self.lower_bound = current_price - atr_offset
         self.upper_bound = current_price + atr_offset
         self.current_price = current_price
+        self.atr_value = atr_value  # PHASE 7.3: Store for dynamic allocation
         
         # Calculate spacing between grid levels
         self.grid_spacing = (self.upper_bound - self.lower_bound) / (self.n_levels - 1)
@@ -73,8 +74,45 @@ class GridStrategy:
             'lower_bound': self.lower_bound,
             'upper_bound': self.upper_bound,
             'grid_spacing': self.grid_spacing,
-            'atr_offset': atr_offset
+            'atr_offset': atr_offset,
+            'atr_value': atr_value  # Include ATR in params
         }
+    
+    def calculate_dynamic_allocation(self, base_allocation: float = 2.0) -> float:
+        """
+        PHASE 7.3: Calculate allocation based on volatility
+        
+        Higher ATR = smaller allocation (risk normalization)
+        Lower ATR = larger allocation (capitalize on stability)
+        
+        Args:
+            base_allocation: Base allocation percentage (default: 2.0%)
+        
+        Returns:
+            float: Adjusted allocation percentage (clamped between 0.5% and 5.0%)
+        
+        Formula:
+            allocation = base_allocation × (baseline_atr_pct / current_atr_pct)
+        """
+        if self.current_price is None or self.atr_value is None:
+            logger.warning("[DYNAMIC ALLOCATION] No price/ATR data, using base allocation")
+            return base_allocation
+        
+        # Calculate ATR as percentage of price
+        atr_pct = (self.atr_value / self.current_price) * 100
+        
+        # Baseline ATR percentage (typical BTC volatility ~2%)
+        baseline_atr_pct = 2.0
+        
+        # Calculate adjusted allocation (inverse relationship)
+        adjusted_allocation = base_allocation * (baseline_atr_pct / max(atr_pct, 0.5))
+        
+        # Clamp between 0.5% and 5.0%
+        final_allocation = max(0.5, min(5.0, adjusted_allocation))
+        
+        logger.info(f"[DYNAMIC ALLOCATION] ATR%: {atr_pct:.2f}% | Base: {base_allocation}% | Adjusted: {final_allocation:.2f}%")
+        
+        return final_allocation
     
     def generate_grid_orders(self, total_balance: float) -> List[Dict[str, Any]]:
         """

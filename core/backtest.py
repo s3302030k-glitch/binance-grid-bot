@@ -14,6 +14,9 @@ from core.strategy import GridStrategy
 
 logger = logging.getLogger(__name__)
 
+# PHASE 7.4: Trading fee configuration (Binance spot)
+FEE_RATE = 0.001  # 0.1% per trade
+
 
 class Backtester:
     """
@@ -123,6 +126,7 @@ class Backtester:
             equity_curve = []
             max_equity = initial_balance
             max_drawdown = 0.0
+            total_fees = 0.0  # PHASE 7.4: Track total fees
             
             # Simulate candle by candle
             for idx, candle in df.iterrows():
@@ -151,7 +155,11 @@ class Backtester:
                             'amount': order['amount'],
                             'entry_price': order['price']
                         }
-                        balance -= order['price'] * order['amount']
+                        # PHASE 7.4: Deduct fee from balance
+                        cost = order['price'] * order['amount']
+                        fee = cost * FEE_RATE
+                        total_fees += fee
+                        balance -= (cost + fee)
                         
                         # Remove BUY order, place SELL order at next level
                         del active_orders[level]
@@ -178,8 +186,15 @@ class Backtester:
                         # Close position
                         if level in holdings:
                             holding = holdings[level]
-                            profit = (order['price'] - holding['entry_price']) * order['amount']
-                            balance += order['price'] * order['amount']
+                            # PHASE 7.4: Calculate profit after fees
+                            revenue = order['price'] * order['amount']
+                            fee = revenue * FEE_RATE
+                            total_fees += fee
+                            balance += (revenue - fee)
+                            
+                            # Profit = (sell - buy) * amount - both fees
+                            entry_fee = holding['entry_price'] * order['amount'] * FEE_RATE
+                            profit = (order['price'] - holding['entry_price']) * order['amount'] - (fee + entry_fee)
                             del holdings[level]
                             
                             # Remove SELL order, place BUY order at previous level
@@ -240,6 +255,7 @@ class Backtester:
                 'final_equity': final_equity,
                 'total_return_pct': total_return,
                 'total_profit': total_profit,
+                'total_fees': total_fees,  # PHASE 7.4: Include total fees paid
                 'max_drawdown_pct': max_drawdown,
                 'total_trades': len(trade_history),
                 'sell_trades': len(sell_trades),
@@ -278,6 +294,7 @@ class Backtester:
         logger.info(f"Initial Balance:   ${results['initial_balance']:,.2f}")
         logger.info(f"Final Equity:      ${results['final_equity']:,.2f}")
         logger.info(f"Total Profit:      ${results['total_profit']:,.2f}")
+        logger.info(f"Total Fees Paid:   ${results.get('total_fees', 0):,.2f}")  # PHASE 7.4
         logger.info(f"Total Return:      {results['total_return_pct']:,.2f}%")
         logger.info(f"Max Drawdown:      {results['max_drawdown_pct']:,.2f}%")
         logger.info(f"Total Trades:      {results['total_trades']}")
